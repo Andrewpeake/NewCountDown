@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import { Upload, Star, Calendar, Filter, Cloud, CloudOff } from 'lucide-react'
+import { Upload, Star, Calendar, Filter, CloudOff } from 'lucide-react'
 import { Photo, PhotoStorage } from '@/lib/storage'
 import { PhotoGrid } from './gallery/PhotoGrid'
 import { PhotoUploader } from './gallery/PhotoUploader'

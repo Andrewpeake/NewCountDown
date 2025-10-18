@@ -2,10 +2,7 @@ import {
   ref, 
   uploadBytes, 
   getDownloadURL, 
-  deleteObject, 
-  listAll,
-  getMetadata,
-  updateMetadata
+  deleteObject
 } from 'firebase/storage'
 import { 
   doc, 
@@ -16,8 +13,7 @@ import {
   collection, 
   query, 
   orderBy, 
-  getDocs,
-  where
+  getDocs
 } from 'firebase/firestore'
 import { storage, db } from './firebase'
 import { Photo } from './storage'
@@ -99,7 +95,6 @@ export class CloudStorageService {
       const data = docSnap.data()
       
       // Download the actual photo data
-      const storageRef = ref(storage, `${this.STORAGE_PATH}/${cloudId}`)
       const response = await fetch(data.cloudUrl)
       const arrayBuffer = await response.arrayBuffer()
       

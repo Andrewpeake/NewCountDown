@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { 
   Cloud, 
-  CloudOff, 
   Upload, 
   Download, 
   CheckCircle, 
@@ -15,7 +14,6 @@ import { PhotoStorage } from '@/lib/storage'
 import { SyncStatus as SyncStatusType } from '@/lib/cloudStorage'
 import { Button } from './ui/button'
 import { Card, CardContent } from './ui/card'
-import { cn } from '@/lib/utils'
 
 interface SyncStatusProps {
   onSync: () => void

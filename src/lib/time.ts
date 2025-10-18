@@ -38,6 +38,12 @@ export class TimeUtils {
    */
   static parseTargetDate(dateString: string, timezone: string): DateTime {
     try {
+      // Handle empty or invalid date strings
+      if (!dateString || dateString.trim() === '') {
+        console.warn('Empty date string provided, using default date')
+        return DateTime.fromISO('2025-11-02T06:03:00.000Z', { zone: timezone })
+      }
+
       // Try to parse as ISO string first
       let dt = DateTime.fromISO(dateString)
       
@@ -47,7 +53,8 @@ export class TimeUtils {
       }
       
       if (!dt.isValid) {
-        throw new Error(`Invalid date: ${dateString}`)
+        console.warn(`Invalid date string: ${dateString}, using default date`)
+        return DateTime.fromISO('2025-11-02T06:03:00.000Z', { zone: timezone })
       }
       
       return dt
