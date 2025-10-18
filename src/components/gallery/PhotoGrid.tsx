@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Heart, Edit3, Trash2, Star } from 'lucide-react'
+import { Heart, Edit3, Trash2, Star, Cloud, CloudOff, Upload } from 'lucide-react'
 import { Photo } from '@/lib/storage'
 import { PhotoLightbox } from './PhotoLightbox'
 import { Button } from '../ui/button'
@@ -11,6 +11,7 @@ interface PhotoGridProps {
   onUpdatePhoto: (id: string, updates: Partial<Photo>) => void
   onDeletePhoto: (id: string) => void
   onReorder: (photos: Photo[]) => void
+  onUploadToCloud?: (id: string) => void
   sortBy: 'newest' | 'oldest' | 'favorites'
 }
 
@@ -19,6 +20,7 @@ export const PhotoGrid: React.FC<PhotoGridProps> = ({
   onUpdatePhoto,
   onDeletePhoto,
   onReorder,
+  onUploadToCloud,
   sortBy
 }) => {
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null)
@@ -153,6 +155,17 @@ export const PhotoGrid: React.FC<PhotoGridProps> = ({
                 </div>
               )}
               
+              {/* Cloud sync indicator */}
+              <div className="absolute top-2 left-2">
+                {photo.cloudId ? (
+                  <Cloud className="w-4 h-4 text-green-500" />
+                ) : photo.isUploading ? (
+                  <Upload className="w-4 h-4 text-blue-500 animate-pulse" />
+                ) : (
+                  <CloudOff className="w-4 h-4 text-gray-400" />
+                )}
+              </div>
+              
               {/* Action buttons */}
               <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                 <div className="flex gap-2">
@@ -182,6 +195,20 @@ export const PhotoGrid: React.FC<PhotoGridProps> = ({
                   >
                     <Edit3 className="w-4 h-4 text-slate-600" />
                   </Button>
+                  
+                  {!photo.cloudId && onUploadToCloud && (
+                    <Button
+                      size="icon"
+                      variant="secondary"
+                      className="w-8 h-8 bg-blue-500/90 hover:bg-blue-500"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onUploadToCloud(photo.id)
+                      }}
+                    >
+                      <Cloud className="w-4 h-4 text-white" />
+                    </Button>
+                  )}
                   
                   <Button
                     size="icon"

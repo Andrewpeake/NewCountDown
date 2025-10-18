@@ -1,4 +1,5 @@
 import { get, set, del, keys } from 'idb-keyval'
+import { CloudStorageService, CloudPhoto, SyncStatus } from './cloudStorage'
 
 // Types for our data structures
 export interface Photo {
@@ -9,6 +10,11 @@ export interface Photo {
   caption?: string
   isFavorite: boolean
   order: number
+  cloudId?: string
+  cloudUrl?: string
+  lastSynced?: Date
+  isUploading?: boolean
+  uploadProgress?: number
 }
 
 export interface CountdownSettings {
@@ -120,6 +126,84 @@ export class PhotoStorage {
     
     await Promise.all(photoKeys.map(key => del(key)))
     await del(this.ORDER_KEY)
+  }
+
+  // Cloud sync methods
+  static async syncWithCloud(): Promise<{
+    uploaded: CloudPhoto[]
+    downloaded: Photo[]
+    conflicts: { local: Photo; cloud: CloudPhoto }[]
+  }> {
+    try {
+      const localPhotos = await this.getAllPhotos()
+      const syncResult = await CloudStorageService.syncPhotos(localPhotos)
+      
+      // Update local photos with cloud metadata
+      for (const cloudPhoto of syncResult.uploaded) {
+        await this.updatePhoto(cloudPhoto.id, {
+          cloudId: cloudPhoto.cloudId,
+          cloudUrl: cloudPhoto.cloudUrl,
+          lastSynced: cloudPhoto.lastSynced
+        })
+      }
+      
+      // Add downloaded photos to local storage
+      for (const photo of syncResult.downloaded) {
+        await this.savePhoto(photo)
+      }
+      
+      // Update last sync time
+      localStorage.setItem('lastSync', new Date().toISOString())
+      
+      return syncResult
+    } catch (error) {
+      console.error('Error syncing with cloud:', error)
+      throw error
+    }
+  }
+
+  static async uploadPhotoToCloud(photoId: string): Promise<CloudPhoto> {
+    try {
+      const photo = await this.getPhoto(photoId)
+      if (!photo) throw new Error('Photo not found')
+      
+      const cloudPhoto = await CloudStorageService.uploadPhoto(photo)
+      
+      // Update local photo with cloud metadata
+      await this.updatePhoto(photoId, {
+        cloudId: cloudPhoto.cloudId,
+        cloudUrl: cloudPhoto.cloudUrl,
+        lastSynced: cloudPhoto.lastSynced
+      })
+      
+      return cloudPhoto
+    } catch (error) {
+      console.error('Error uploading photo to cloud:', error)
+      throw error
+    }
+  }
+
+  static async downloadPhotoFromCloud(cloudId: string): Promise<Photo> {
+    try {
+      const photo = await CloudStorageService.downloadPhoto(cloudId)
+      await this.savePhoto(photo)
+      return photo
+    } catch (error) {
+      console.error('Error downloading photo from cloud:', error)
+      throw error
+    }
+  }
+
+  static async getSyncStatus(): Promise<SyncStatus> {
+    return await CloudStorageService.getSyncStatus()
+  }
+
+  static setupSyncListeners(
+    onOnline: () => void,
+    onOffline: () => void,
+    onSyncStatusChange: (status: SyncStatus) => void
+  ): () => void {
+    return CloudStorageService.setupSyncListeners(onOnline, onOffline, onSyncStatusChange)
   }
 }
 

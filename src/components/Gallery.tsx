@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import { Upload, Star, Calendar, Filter } from 'lucide-react'
+import { Upload, Star, Calendar, Filter, Cloud, CloudOff } from 'lucide-react'
 import { Photo, PhotoStorage } from '@/lib/storage'
 import { PhotoGrid } from './gallery/PhotoGrid'
 import { PhotoUploader } from './gallery/PhotoUploader'
+import { SyncStatus } from './SyncStatus'
 import { Button } from './ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 
@@ -13,6 +14,8 @@ export const Gallery: React.FC = () => {
   const [photos, setPhotos] = useState<Photo[]>([])
   const [sortBy, setSortBy] = useState<SortOption>('newest')
   const [isLoading, setIsLoading] = useState(true)
+  const [isSyncing, setIsSyncing] = useState(false)
+  const [syncError, setSyncError] = useState<string | null>(null)
 
   // Load photos on mount
   useEffect(() => {
@@ -89,6 +92,43 @@ export const Gallery: React.FC = () => {
     }
   }, [])
 
+  const handleSync = useCallback(async () => {
+    try {
+      setIsSyncing(true)
+      setSyncError(null)
+      
+      const syncResult = await PhotoStorage.syncWithCloud()
+      
+      // Reload photos to show updated data
+      await loadPhotos()
+      
+      console.log('Sync completed:', {
+        uploaded: syncResult.uploaded.length,
+        downloaded: syncResult.downloaded.length,
+        conflicts: syncResult.conflicts.length
+      })
+      
+      if (syncResult.conflicts.length > 0) {
+        console.warn('Sync conflicts detected:', syncResult.conflicts)
+        // In a real app, you'd show a conflict resolution UI
+      }
+    } catch (error) {
+      console.error('Sync failed:', error)
+      setSyncError(error instanceof Error ? error.message : 'Sync failed')
+    } finally {
+      setIsSyncing(false)
+    }
+  }, [])
+
+  const handleUploadToCloud = useCallback(async (photoId: string) => {
+    try {
+      await PhotoStorage.uploadPhotoToCloud(photoId)
+      await loadPhotos() // Reload to show updated cloud status
+    } catch (error) {
+      console.error('Error uploading photo to cloud:', error)
+    }
+  }, [])
+
   const sortOptions: Array<{ value: SortOption; label: string; icon: React.ReactNode }> = [
     { value: 'newest', label: 'Newest', icon: <Calendar className="w-4 h-4" /> },
     { value: 'oldest', label: 'Oldest', icon: <Calendar className="w-4 h-4" /> },
@@ -124,6 +164,23 @@ export const Gallery: React.FC = () => {
             </p>
           </div>
         </div>
+
+        {/* Sync Status */}
+        <SyncStatus onSync={handleSync} isSyncing={isSyncing} />
+
+        {/* Sync Error */}
+        {syncError && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md"
+          >
+            <div className="flex items-center gap-2 text-red-700 dark:text-red-400">
+              <CloudOff className="w-4 h-4" />
+              <span className="text-sm">Sync failed: {syncError}</span>
+            </div>
+          </motion.div>
+        )}
 
         {/* Upload section */}
         <Card className="mb-6">
@@ -172,6 +229,7 @@ export const Gallery: React.FC = () => {
         onUpdatePhoto={handleUpdatePhoto}
         onDeletePhoto={handleDeletePhoto}
         onReorder={handleReorder}
+        onUploadToCloud={handleUploadToCloud}
         sortBy={sortBy}
       />
     </div>
