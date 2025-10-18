@@ -13,7 +13,6 @@ export default defineConfig(({ command }) => {
       react(),
       VitePWA({
         registerType: 'autoUpdate',
-        base,
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg}']
         },
