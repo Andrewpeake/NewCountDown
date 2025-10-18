@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, ChevronLeft, ChevronRight, Heart, Edit3, Trash2, Star } from 'lucide-react'
+import { X, Heart, Edit3, Trash2, Star } from 'lucide-react'
 import { Photo } from '@/lib/storage'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'

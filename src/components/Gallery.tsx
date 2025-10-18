@@ -6,7 +6,6 @@ import { PhotoGrid } from './gallery/PhotoGrid'
 import { PhotoUploader } from './gallery/PhotoUploader'
 import { Button } from './ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
-import { cn } from '@/lib/utils'
 
 type SortOption = 'newest' | 'oldest' | 'favorites'
 
