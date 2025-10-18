@@ -56,8 +56,8 @@ export const PhotoGrid: React.FC<PhotoGridProps> = ({
     onUpdatePhoto(photo.id, { isFavorite: !photo.isFavorite })
   }, [onUpdatePhoto])
 
-  const handleDeletePhoto = useCallback((photo: Photo) => {
-    onDeletePhoto(photo.id)
+  const handleDeletePhoto = useCallback((id: string) => {
+    onDeletePhoto(id)
     setSelectedPhoto(null)
   }, [onDeletePhoto])
 
@@ -189,7 +189,7 @@ export const PhotoGrid: React.FC<PhotoGridProps> = ({
                     className="w-8 h-8 bg-red-500/90 hover:bg-red-500"
                     onClick={(e) => {
                       e.stopPropagation()
-                      handleDeletePhoto(photo)
+                      handleDeletePhoto(photo.id)
                     }}
                   >
                     <Trash2 className="w-4 h-4 text-white" />

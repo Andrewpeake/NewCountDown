@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useState, useEffect } from 'react'
+import { motion } from 'framer-motion'
 import { Heart, Camera, Settings as SettingsIcon } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs'
 import { Countdown } from './components/Countdown'
@@ -7,12 +7,11 @@ import { Gallery } from './components/Gallery'
 import { Settings } from './components/Settings'
 import { CountdownEditor } from './components/CountdownEditor'
 import { SettingsStorage } from './lib/storage'
-import { cn } from './lib/utils'
 
 function App() {
   const [activeTab, setActiveTab] = useState('countdown')
   const [isCountdownEditorOpen, setIsCountdownEditorOpen] = useState(false)
-  const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('system')
+  const [, setTheme] = useState<'light' | 'dark' | 'system'>('system')
 
   useEffect(() => {
     // Load theme from settings

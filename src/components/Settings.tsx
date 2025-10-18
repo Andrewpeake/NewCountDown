@@ -6,9 +6,7 @@ import {
   Upload, 
   Trash2, 
   Palette,
-  Calendar,
   Clock,
-  Globe,
   AlertTriangle,
   CheckCircle
 } from 'lucide-react'
@@ -17,7 +15,6 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { Input } from './ui/input'
 import { SettingsStorage, DataExporter, AppSettings } from '@/lib/storage'
 import { TimeUtils, COMMON_TIMEZONES } from '@/lib/time'
-import { cn } from '@/lib/utils'
 
 export const Settings: React.FC = () => {
   const [settings, setSettings] = useState<AppSettings>(SettingsStorage.getSettings())
