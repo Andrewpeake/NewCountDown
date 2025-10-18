@@ -4,8 +4,8 @@ import { VitePWA } from 'vite-plugin-pwa'
 import path from 'path'
 
 // https://vitejs.dev/config/
-export default defineConfig({
-  base: '/NewCountDown/',
+export default defineConfig(({ command }) => ({
+  base: command === 'build' ? '/NewCountDown/' : '/',
   plugins: [
     react(),
     VitePWA({
@@ -41,4 +41,4 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-})
+}))
