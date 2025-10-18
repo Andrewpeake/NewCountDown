@@ -44,6 +44,11 @@ export class CloudStorageService {
    */
   static async uploadPhoto(photo: Photo): Promise<CloudPhoto> {
     try {
+      // Check if Firebase is properly configured
+      if (!storage) {
+        throw new Error('Firebase Storage not initialized. Please configure Firebase.')
+      }
+
       const cloudId = `photo_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
       const storageRef = ref(storage, `${this.STORAGE_PATH}/${cloudId}`)
       

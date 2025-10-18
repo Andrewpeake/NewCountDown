@@ -14,6 +14,12 @@ const firebaseConfig = {
   appId: "your-app-id"
 }
 
+// Check if Firebase is properly configured
+if (firebaseConfig.apiKey === "your-api-key") {
+  console.warn('🔥 Firebase not configured! Cloud sync will not work.')
+  console.warn('📖 See FIREBASE_QUICK_SETUP.md for setup instructions')
+}
+
 // Initialize Firebase
 const app = initializeApp(firebaseConfig)
 
