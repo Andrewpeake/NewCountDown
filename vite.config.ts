@@ -19,7 +19,7 @@ export default defineConfig(({ command }) => {
         },
         includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
         manifest: {
-          name: 'T+Andrew',
+          name: 'Tara ↔ Andrew',
           short_name: 'T+Andrew',
           description: 'A relationship countdown and photo gallery for Andrew & Tara',
           theme_color: '#ffffff',
@@ -29,12 +29,12 @@ export default defineConfig(({ command }) => {
           scope: base,
           icons: [
             {
-              src: `${base}pwa-192x192.png`,
+              src: `${base}icons/icon-192.png`,
               sizes: '192x192',
               type: 'image/png'
             },
             {
-              src: `${base}pwa-512x512.png`,
+              src: `${base}icons/icon-512.png`,
               sizes: '512x512',
               type: 'image/png'
             }
