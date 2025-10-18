@@ -1,0 +1,293 @@
+import { get, set, del, keys } from 'idb-keyval'
+
+// Types for our data structures
+export interface Photo {
+  id: string
+  data: ArrayBuffer
+  createdAt: Date
+  takenAt?: Date
+  caption?: string
+  isFavorite: boolean
+  order: number
+}
+
+export interface CountdownSettings {
+  targetDate: string // ISO string
+  timezone: string
+}
+
+export interface AppSettings {
+  theme: 'light' | 'dark' | 'system'
+  countdown: CountdownSettings
+}
+
+// Default settings
+const DEFAULT_COUNTDOWN: CountdownSettings = {
+  targetDate: '2025-11-02T06:03:00.000Z', // Nov 2, 2025 12:03 AM America/Edmonton (UTC-6)
+  timezone: 'America/Edmonton'
+}
+
+const DEFAULT_APP_SETTINGS: AppSettings = {
+  theme: 'system',
+  countdown: DEFAULT_COUNTDOWN
+}
+
+// Photo storage using IndexedDB
+export class PhotoStorage {
+  private static readonly PHOTO_PREFIX = 'photo:'
+  private static readonly ORDER_KEY = 'photo_order'
+
+  static async savePhoto(photo: Omit<Photo, 'id'>): Promise<string> {
+    const id = `photo_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    const photoWithId: Photo = { ...photo, id }
+    
+    await set(`${this.PHOTO_PREFIX}${id}`, photoWithId)
+    
+    // Update order
+    const order = await this.getPhotoOrder()
+    order.push(id)
+    await set(this.ORDER_KEY, order)
+    
+    return id
+  }
+
+  static async getPhoto(id: string): Promise<Photo | null> {
+    return await get(`${this.PHOTO_PREFIX}${id}`) || null
+  }
+
+  static async getAllPhotos(): Promise<Photo[]> {
+    const allKeys = await keys()
+    const photoKeys = allKeys.filter(key => 
+      typeof key === 'string' && key.startsWith(this.PHOTO_PREFIX)
+    )
+    
+    const photos = await Promise.all(
+      photoKeys.map(key => get(key))
+    )
+    
+    return photos.filter((photo): photo is Photo => photo !== undefined)
+  }
+
+  static async deletePhoto(id: string): Promise<void> {
+    await del(`${this.PHOTO_PREFIX}${id}`)
+    
+    // Update order
+    const order = await this.getPhotoOrder()
+    const newOrder = order.filter(photoId => photoId !== id)
+    await set(this.ORDER_KEY, newOrder)
+  }
+
+  static async updatePhoto(id: string, updates: Partial<Photo>): Promise<void> {
+    const photo = await this.getPhoto(id)
+    if (!photo) return
+    
+    const updatedPhoto = { ...photo, ...updates }
+    await set(`${this.PHOTO_PREFIX}${id}`, updatedPhoto)
+  }
+
+  static async reorderPhotos(photoIds: string[]): Promise<void> {
+    await set(this.ORDER_KEY, photoIds)
+  }
+
+  private static async getPhotoOrder(): Promise<string[]> {
+    return await get(this.ORDER_KEY) || []
+  }
+
+  static async getPhotosInOrder(): Promise<Photo[]> {
+    const order = await this.getPhotoOrder()
+    const photos = await this.getAllPhotos()
+    
+    // Create a map for quick lookup
+    const photoMap = new Map(photos.map(photo => [photo.id, photo]))
+    
+    // Return photos in the stored order, with any new photos at the end
+    const orderedPhotos = order
+      .map(id => photoMap.get(id))
+      .filter((photo): photo is Photo => photo !== undefined)
+    
+    // Add any photos not in the order (new photos)
+    const orderedIds = new Set(order)
+    const unorderedPhotos = photos.filter(photo => !orderedIds.has(photo.id))
+    
+    return [...orderedPhotos, ...unorderedPhotos]
+  }
+
+  static async clearAllPhotos(): Promise<void> {
+    const allKeys = await keys()
+    const photoKeys = allKeys.filter(key => 
+      typeof key === 'string' && key.startsWith(this.PHOTO_PREFIX)
+    )
+    
+    await Promise.all(photoKeys.map(key => del(key)))
+    await del(this.ORDER_KEY)
+  }
+}
+
+// Settings storage using localStorage
+export class SettingsStorage {
+  private static readonly SETTINGS_KEY = 't_andrew_settings'
+
+  static getSettings(): AppSettings {
+    try {
+      const stored = localStorage.getItem(this.SETTINGS_KEY)
+      if (!stored) return DEFAULT_APP_SETTINGS
+      
+      const parsed = JSON.parse(stored)
+      return {
+        ...DEFAULT_APP_SETTINGS,
+        ...parsed,
+        countdown: {
+          ...DEFAULT_COUNTDOWN,
+          ...parsed.countdown
+        }
+      }
+    } catch {
+      return DEFAULT_APP_SETTINGS
+    }
+  }
+
+  static saveSettings(settings: AppSettings): void {
+    localStorage.setItem(this.SETTINGS_KEY, JSON.stringify(settings))
+  }
+
+  static updateCountdown(countdown: CountdownSettings): void {
+    const settings = this.getSettings()
+    settings.countdown = countdown
+    this.saveSettings(settings)
+  }
+
+  static updateTheme(theme: AppSettings['theme']): void {
+    const settings = this.getSettings()
+    settings.theme = theme
+    this.saveSettings(settings)
+  }
+
+  static clearAllData(): void {
+    localStorage.removeItem(this.SETTINGS_KEY)
+    // Note: PhotoStorage.clearAllPhotos() should be called separately
+  }
+}
+
+// Export/Import functionality
+export interface ExportData {
+  settings: AppSettings
+  photos: Array<{
+    id: string
+    data: string // base64 encoded
+    createdAt: string
+    takenAt?: string
+    caption?: string
+    isFavorite: boolean
+    order: number
+  }>
+  manifest: {
+    version: string
+    exportedAt: string
+  }
+}
+
+export class DataExporter {
+  static async exportData(): Promise<Blob> {
+    const settings = SettingsStorage.getSettings()
+    const photos = await PhotoStorage.getAllPhotos()
+    
+    const exportData: ExportData = {
+      settings,
+      photos: await Promise.all(photos.map(async photo => ({
+        id: photo.id,
+        data: await this.arrayBufferToBase64(photo.data),
+        createdAt: photo.createdAt.toISOString(),
+        takenAt: photo.takenAt?.toISOString(),
+        caption: photo.caption,
+        isFavorite: photo.isFavorite,
+        order: photo.order
+      }))),
+      manifest: {
+        version: '1.0.0',
+        exportedAt: new Date().toISOString()
+      }
+    }
+
+    const JSZip = (await import('jszip')).default
+    const zip = new JSZip()
+    
+    // Add manifest
+    zip.file('manifest.json', JSON.stringify(exportData.manifest, null, 2))
+    
+    // Add settings
+    zip.file('settings.json', JSON.stringify(settings, null, 2))
+    
+    // Add photos
+    const photosFolder = zip.folder('photos')
+    if (photosFolder) {
+      for (const photo of exportData.photos) {
+        photosFolder.file(`${photo.id}.json`, JSON.stringify(photo, null, 2))
+      }
+    }
+    
+    return await zip.generateAsync({ type: 'blob' })
+  }
+
+  static async importData(file: File): Promise<void> {
+    const JSZip = (await import('jszip')).default
+    const zip = await JSZip.loadAsync(file)
+    
+    // Read manifest
+    const manifestFile = zip.file('manifest.json')
+    if (!manifestFile) throw new Error('Invalid export file: missing manifest')
+    
+    const manifest = JSON.parse(await manifestFile.async('text'))
+    if (manifest.version !== '1.0.0') {
+      throw new Error(`Unsupported export version: ${manifest.version}`)
+    }
+    
+    // Import settings
+    const settingsFile = zip.file('settings.json')
+    if (settingsFile) {
+      const settings = JSON.parse(await settingsFile.async('text'))
+      SettingsStorage.saveSettings(settings)
+    }
+    
+    // Import photos
+    const photosFolder = zip.folder('photos')
+    if (photosFolder) {
+      const photoFiles = Object.keys(photosFolder.files).filter(name => name.endsWith('.json'))
+      
+      for (const fileName of photoFiles) {
+        const photoFile = photosFolder.file(fileName)
+        if (photoFile) {
+          const photoData = JSON.parse(await photoFile.async('text'))
+          const photo: Photo = {
+            id: photoData.id,
+            data: this.base64ToArrayBuffer(photoData.data),
+            createdAt: new Date(photoData.createdAt),
+            takenAt: photoData.takenAt ? new Date(photoData.takenAt) : undefined,
+            caption: photoData.caption,
+            isFavorite: photoData.isFavorite,
+            order: photoData.order
+          }
+          
+          await set(`photo:${photo.id}`, photo)
+        }
+      }
+    }
+  }
+
+  private static async arrayBufferToBase64(buffer: ArrayBuffer): Promise<string> {
+    const bytes = new Uint8Array(buffer)
+    let binary = ''
+    for (let i = 0; i < bytes.byteLength; i++) {
+      binary += String.fromCharCode(bytes[i])
+    }
+    return btoa(binary)
+  }
+
+  private static base64ToArrayBuffer(base64: string): ArrayBuffer {
+    const binary = atob(base64)
+    const bytes = new Uint8Array(binary.length)
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i)
+    }
+    return bytes.buffer
+  }
+}
