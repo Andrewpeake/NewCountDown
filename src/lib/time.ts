@@ -137,7 +137,7 @@ export class TimeUtils {
    */
   static toISOString(date: Date, timezone: string): string {
     const dt = DateTime.fromJSDate(date, { zone: timezone })
-    return dt.toISO()
+    return dt.toISO() || date.toISOString()
   }
 
   /**
