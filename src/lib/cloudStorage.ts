@@ -102,6 +102,11 @@ export class CloudStorageService {
    */
   static async downloadPhoto(cloudId: string): Promise<Photo> {
     try {
+      // Check if Firebase is properly configured
+      if (!storage) {
+        throw new Error('Firebase Storage not initialized. Please configure Firebase.')
+      }
+      
       // Get metadata from Firestore
       const docRef = doc(db, this.PHOTOS_COLLECTION, cloudId)
       const docSnap = await getDoc(docRef)
@@ -112,8 +117,20 @@ export class CloudStorageService {
       
       const data = docSnap.data()
       
+      // Debug: Log the download attempt
+      console.log('Downloading photo from cloud:', {
+        cloudId,
+        cloudUrl: data.cloudUrl,
+        hasCloudUrl: !!data.cloudUrl
+      })
+      
       // Download the actual photo data
       const response = await fetch(data.cloudUrl)
+      
+      if (!response.ok) {
+        throw new Error(`Failed to download photo: ${response.status} ${response.statusText}`)
+      }
+      
       const arrayBuffer = await response.arrayBuffer()
       
       return {
