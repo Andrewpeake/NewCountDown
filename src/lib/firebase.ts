@@ -4,20 +4,19 @@ import { getAuth } from 'firebase/auth'
 import { getFirestore } from 'firebase/firestore'
 
 // Firebase configuration
-// You'll need to replace these with your actual Firebase config
 const firebaseConfig = {
-  apiKey: "your-api-key",
-  authDomain: "your-project.firebaseapp.com",
-  projectId: "your-project-id",
-  storageBucket: "your-project.appspot.com",
-  messagingSenderId: "123456789",
-  appId: "your-app-id"
+  apiKey: "AIzaSyB19RxofbULbOI2rrGa_KoxupYw4HK-fgA",
+  authDomain: "tandagallery-29ba8.firebaseapp.com",
+  projectId: "tandagallery-29ba8",
+  storageBucket: "tandagallery-29ba8.appspot.com",
+  messagingSenderId: "1049051019693",
+  appId: "1:1049051019693:web:your-app-id" // You'll need to get this from Firebase Console
 }
 
 // Check if Firebase is properly configured
-if (firebaseConfig.apiKey === "your-api-key") {
-  console.warn('🔥 Firebase not configured! Cloud sync will not work.')
-  console.warn('📖 See FIREBASE_QUICK_SETUP.md for setup instructions')
+if (firebaseConfig.appId === "1:1049051019693:web:your-app-id") {
+  console.warn('🔥 Firebase App ID missing! Please get it from Firebase Console.')
+  console.warn('📖 Go to Project Settings > Your apps > Web app to get the App ID')
 }
 
 // Initialize Firebase
