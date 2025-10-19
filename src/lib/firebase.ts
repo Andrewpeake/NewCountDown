@@ -8,16 +8,13 @@ const firebaseConfig = {
   apiKey: "AIzaSyB19RxofbULbOI2rrGa_KoxupYw4HK-fgA",
   authDomain: "tandagallery-29ba8.firebaseapp.com",
   projectId: "tandagallery-29ba8",
-  storageBucket: "tandagallery-29ba8.appspot.com",
+  storageBucket: "tandagallery-29ba8.firebasestorage.app",
   messagingSenderId: "1049051019693",
-  appId: "1:1049051019693:web:your-app-id" // You'll need to get this from Firebase Console
+  appId: "1:1049051019693:web:e89c11c80e5c9844e54924",
+  measurementId: "G-TL5WL6N079"
 }
 
-// Check if Firebase is properly configured
-if (firebaseConfig.appId === "1:1049051019693:web:your-app-id") {
-  console.warn('🔥 Firebase App ID missing! Please get it from Firebase Console.')
-  console.warn('📖 Go to Project Settings > Your apps > Web app to get the App ID')
-}
+// Firebase is now properly configured! 🎉
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig)
