@@ -57,6 +57,18 @@ export class PhotoStorage {
     return id
   }
 
+  static async savePhotoWithId(photo: Photo): Promise<void> {
+    // Save photo with existing ID (for synced photos)
+    await set(`${this.PHOTO_PREFIX}${photo.id}`, photo)
+    
+    // Add to order if not already present
+    const order = await this.getPhotoOrder()
+    if (!order.includes(photo.id)) {
+      order.push(photo.id)
+      await set(this.ORDER_KEY, order)
+    }
+  }
+
   static async getPhoto(id: string): Promise<Photo | null> {
     return await get(`${this.PHOTO_PREFIX}${id}`) || null
   }
@@ -147,9 +159,13 @@ export class PhotoStorage {
         })
       }
       
-      // Add downloaded photos to local storage
+      // Add downloaded photos to local storage (preserve original IDs)
       for (const photo of syncResult.downloaded) {
-        await this.savePhoto(photo)
+        console.log('Downloading photo to local storage:', {
+          id: photo.id,
+          exists: !!(await this.getPhoto(photo.id))
+        })
+        await this.savePhotoWithId(photo)
       }
       
       // Update last sync time
