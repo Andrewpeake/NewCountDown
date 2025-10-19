@@ -64,18 +64,24 @@ export class CloudStorageService {
         lastSynced: new Date()
       }
       
-      // Save metadata to Firestore
-      await setDoc(doc(db, this.PHOTOS_COLLECTION, cloudId), {
+      // Save metadata to Firestore (filter out undefined values)
+      const firestoreData: any = {
         id: photo.id,
         cloudId,
         cloudUrl,
         createdAt: photo.createdAt,
-        takenAt: photo.takenAt,
-        caption: photo.caption,
-        isFavorite: photo.isFavorite,
-        order: photo.order,
+        caption: photo.caption || '',
+        isFavorite: photo.isFavorite || false,
+        order: photo.order || 0,
         lastSynced: new Date()
-      })
+      }
+      
+      // Only include takenAt if it's not undefined
+      if (photo.takenAt) {
+        firestoreData.takenAt = photo.takenAt
+      }
+      
+      await setDoc(doc(db, this.PHOTOS_COLLECTION, cloudId), firestoreData)
       
       return cloudPhoto
     } catch (error) {
@@ -124,10 +130,19 @@ export class CloudStorageService {
   static async updatePhoto(cloudId: string, updates: Partial<Photo>): Promise<void> {
     try {
       const docRef = doc(db, this.PHOTOS_COLLECTION, cloudId)
-      await updateDoc(docRef, {
-        ...updates,
+      
+      // Filter out undefined values
+      const filteredUpdates: any = {
         lastSynced: new Date()
+      }
+      
+      Object.entries(updates).forEach(([key, value]) => {
+        if (value !== undefined) {
+          filteredUpdates[key] = value
+        }
       })
+      
+      await updateDoc(docRef, filteredUpdates)
     } catch (error) {
       console.error('Error updating photo in cloud:', error)
       throw error
