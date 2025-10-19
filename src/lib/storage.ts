@@ -87,6 +87,21 @@ export class PhotoStorage {
   }
 
   static async deletePhoto(id: string): Promise<void> {
+    // Get photo first to check if it has cloud metadata
+    const photo = await this.getPhoto(id)
+    
+    // Delete from cloud if it exists there
+    if (photo?.cloudId) {
+      try {
+        await CloudStorageService.deletePhoto(photo.cloudId)
+        console.log('Deleted photo from cloud:', photo.cloudId)
+      } catch (error) {
+        console.error('Error deleting photo from cloud:', error)
+        // Continue with local deletion even if cloud deletion fails
+      }
+    }
+    
+    // Delete from local storage
     await del(`${this.PHOTO_PREFIX}${id}`)
     
     // Update order
@@ -101,6 +116,17 @@ export class PhotoStorage {
     
     const updatedPhoto = { ...photo, ...updates }
     await set(`${this.PHOTO_PREFIX}${id}`, updatedPhoto)
+    
+    // Update cloud if photo exists there
+    if (photo.cloudId) {
+      try {
+        await CloudStorageService.updatePhoto(photo.cloudId, updates)
+        console.log('Updated photo in cloud:', photo.cloudId)
+      } catch (error) {
+        console.error('Error updating photo in cloud:', error)
+        // Continue even if cloud update fails
+      }
+    }
   }
 
   static async reorderPhotos(photoIds: string[]): Promise<void> {
