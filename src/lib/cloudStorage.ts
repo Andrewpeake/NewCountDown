@@ -81,6 +81,13 @@ export class CloudStorageService {
         firestoreData.takenAt = photo.takenAt
       }
       
+      // Debug: Log the data being sent to Firestore
+      console.log('Uploading photo to Firestore:', {
+        cloudId,
+        takenAt: photo.takenAt,
+        firestoreData
+      })
+      
       await setDoc(doc(db, this.PHOTOS_COLLECTION, cloudId), firestoreData)
       
       return cloudPhoto
