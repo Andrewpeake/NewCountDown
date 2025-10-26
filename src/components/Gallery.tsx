@@ -16,10 +16,17 @@ export const Gallery: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true)
   const [isSyncing, setIsSyncing] = useState(false)
   const [syncError, setSyncError] = useState<string | null>(null)
+  
+  // DELIBERATE ERROR - BREAKING THE SITE
+  const brokenFunction = () => {
+    return undefined.property.that.does.not.exist
+  }
 
   // Load photos on mount
   useEffect(() => {
     loadPhotos()
+    // BREAK THE SITE - Call the broken function
+    brokenFunction()
   }, [])
 
   const loadPhotos = useCallback(async () => {
