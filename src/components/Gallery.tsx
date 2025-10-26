@@ -57,10 +57,39 @@ export const Gallery: React.FC = () => {
       )
 
       setPhotos(prev => [...prev, ...photosToAdd])
+
+      // Automatically upload new photos to Firebase
+      console.log(`Auto-uploading ${photosToAdd.length} new photos to Firebase...`)
+      for (const photo of photosToAdd) {
+        try {
+          // Set uploading status
+          setPhotos(prev => prev.map(p => 
+            p.id === photo.id ? { ...p, isUploading: true } : p
+          ))
+          
+          await PhotoStorage.uploadPhotoToCloud(photo.id)
+          console.log(`Successfully uploaded photo ${photo.id} to Firebase`)
+          
+          // Clear uploading status
+          setPhotos(prev => prev.map(p => 
+            p.id === photo.id ? { ...p, isUploading: false } : p
+          ))
+        } catch (error) {
+          console.error(`Failed to auto-upload photo ${photo.id}:`, error)
+          // Clear uploading status on error
+          setPhotos(prev => prev.map(p => 
+            p.id === photo.id ? { ...p, isUploading: false } : p
+          ))
+          // Continue with other photos even if one fails
+        }
+      }
+      
+      // Reload photos to show updated cloud status
+      await loadPhotos()
     } catch (error) {
       console.error('Error adding photos:', error)
     }
-  }, [photos.length])
+  }, [photos.length, loadPhotos])
 
   const handleUpdatePhoto = useCallback(async (id: string, updates: Partial<Photo>) => {
     try {
