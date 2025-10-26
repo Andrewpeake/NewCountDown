@@ -124,8 +124,12 @@ export class CloudStorageService {
         hasCloudUrl: !!data.cloudUrl
       })
       
-      // Download the actual photo data
-      const response = await fetch(data.cloudUrl)
+      // Get a fresh download URL from Firebase Storage
+      const storageRef = ref(storage, `${this.STORAGE_PATH}/${cloudId}`)
+      const freshCloudUrl = await getDownloadURL(storageRef)
+      
+      // Download the actual photo data using the fresh URL
+      const response = await fetch(freshCloudUrl)
       
       if (!response.ok) {
         throw new Error(`Failed to download photo: ${response.status} ${response.statusText}`)
@@ -254,8 +258,14 @@ export class CloudStorageService {
       // Find photos to download (cloud only)
       for (const cloudPhoto of cloudPhotos) {
         if (!localMap.has(cloudPhoto.id)) {
-          const localPhoto = await this.downloadPhoto(cloudPhoto.cloudId)
-          downloaded.push(localPhoto)
+          try {
+            const localPhoto = await this.downloadPhoto(cloudPhoto.cloudId)
+            downloaded.push(localPhoto)
+          } catch (error) {
+            console.error(`Failed to download photo ${cloudPhoto.cloudId}:`, error)
+            // Continue with other photos even if one fails
+            // Optionally, you could remove the invalid photo from cloud storage here
+          }
         }
       }
       
@@ -300,6 +310,37 @@ export class CloudStorageService {
         pendingUploads: 0,
         pendingDownloads: 0
       }
+    }
+  }
+
+  /**
+   * Clean up invalid photos from cloud storage
+   */
+  static async cleanupInvalidPhotos(): Promise<number> {
+    try {
+      const cloudPhotos = await this.getAllPhotos()
+      let cleanedCount = 0
+      
+      for (const cloudPhoto of cloudPhotos) {
+        try {
+          // Try to get a fresh download URL to verify the photo still exists
+          const storageRef = ref(storage, `${this.STORAGE_PATH}/${cloudPhoto.cloudId}`)
+          await getDownloadURL(storageRef)
+        } catch (error) {
+          console.log(`Cleaning up invalid photo: ${cloudPhoto.cloudId}`)
+          try {
+            await this.deletePhoto(cloudPhoto.cloudId)
+            cleanedCount++
+          } catch (deleteError) {
+            console.error(`Failed to delete invalid photo ${cloudPhoto.cloudId}:`, deleteError)
+          }
+        }
+      }
+      
+      return cleanedCount
+    } catch (error) {
+      console.error('Error cleaning up invalid photos:', error)
+      return 0
     }
   }
 

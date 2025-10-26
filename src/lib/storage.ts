@@ -171,8 +171,13 @@ export class PhotoStorage {
     uploaded: CloudPhoto[]
     downloaded: Photo[]
     conflicts: { local: Photo; cloud: CloudPhoto }[]
+    cleaned: number
   }> {
     try {
+      // First, clean up any invalid photos from cloud storage
+      const cleanedCount = await CloudStorageService.cleanupInvalidPhotos()
+      console.log(`Cleaned up ${cleanedCount} invalid photos from cloud storage`)
+      
       const localPhotos = await this.getAllPhotos()
       const syncResult = await CloudStorageService.syncPhotos(localPhotos)
       
@@ -197,7 +202,7 @@ export class PhotoStorage {
       // Update last sync time
       localStorage.setItem('lastSync', new Date().toISOString())
       
-      return syncResult
+      return { ...syncResult, cleaned: cleanedCount }
     } catch (error) {
       console.error('Error syncing with cloud:', error)
       throw error

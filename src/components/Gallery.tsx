@@ -105,7 +105,8 @@ export const Gallery: React.FC = () => {
       console.log('Sync completed:', {
         uploaded: syncResult.uploaded.length,
         downloaded: syncResult.downloaded.length,
-        conflicts: syncResult.conflicts.length
+        conflicts: syncResult.conflicts.length,
+        cleaned: syncResult.cleaned
       })
       
       if (syncResult.conflicts.length > 0) {
