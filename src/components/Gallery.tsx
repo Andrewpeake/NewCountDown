@@ -104,10 +104,13 @@ export const Gallery: React.FC = () => {
 
   const handleDeletePhoto = useCallback(async (id: string) => {
     try {
+      console.log(`Deleting photo: ${id}`)
       await PhotoStorage.deletePhoto(id)
       setPhotos(prev => prev.filter(photo => photo.id !== id))
+      console.log(`Photo ${id} deleted successfully`)
     } catch (error) {
-      console.error('Error deleting photo:', error)
+      console.error(`Error deleting photo ${id}:`, error)
+      // You could add a toast notification here to inform the user
     }
   }, [])
 

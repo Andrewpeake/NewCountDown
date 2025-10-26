@@ -182,14 +182,21 @@ export class CloudStorageService {
    */
   static async deletePhoto(cloudId: string): Promise<void> {
     try {
+      console.log(`Starting Firebase deletion for cloudId: ${cloudId}`)
+      
       // Delete from Firestore
-      await deleteDoc(doc(db, this.PHOTOS_COLLECTION, cloudId))
+      const docRef = doc(db, this.PHOTOS_COLLECTION, cloudId)
+      await deleteDoc(docRef)
+      console.log(`Deleted Firestore document: ${cloudId}`)
       
       // Delete from Storage
       const storageRef = ref(storage, `${this.STORAGE_PATH}/${cloudId}`)
       await deleteObject(storageRef)
+      console.log(`Deleted Firebase Storage file: ${cloudId}`)
+      
+      console.log(`Successfully deleted photo from Firebase: ${cloudId}`)
     } catch (error) {
-      console.error('Error deleting photo from cloud:', error)
+      console.error(`Error deleting photo from Firebase (${cloudId}):`, error)
       throw error
     }
   }

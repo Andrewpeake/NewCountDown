@@ -90,15 +90,23 @@ export class PhotoStorage {
     // Get photo first to check if it has cloud metadata
     const photo = await this.getPhoto(id)
     
+    if (!photo) {
+      console.warn(`Photo with id ${id} not found`)
+      return
+    }
+    
     // Delete from cloud if it exists there
-    if (photo?.cloudId) {
+    if (photo.cloudId) {
       try {
+        console.log(`Deleting photo from Firebase: ${photo.cloudId}`)
         await CloudStorageService.deletePhoto(photo.cloudId)
-        console.log('Deleted photo from cloud:', photo.cloudId)
+        console.log(`Successfully deleted photo from Firebase: ${photo.cloudId}`)
       } catch (error) {
-        console.error('Error deleting photo from cloud:', error)
+        console.error(`Failed to delete photo from Firebase (${photo.cloudId}):`, error)
         // Continue with local deletion even if cloud deletion fails
       }
+    } else {
+      console.log(`Photo ${id} has no cloudId, skipping Firebase deletion`)
     }
     
     // Delete from local storage
@@ -108,6 +116,8 @@ export class PhotoStorage {
     const order = await this.getPhotoOrder()
     const newOrder = order.filter(photoId => photoId !== id)
     await set(this.ORDER_KEY, newOrder)
+    
+    console.log(`Successfully deleted photo locally: ${id}`)
   }
 
   static async updatePhoto(id: string, updates: Partial<Photo>): Promise<void> {
